@@ -875,9 +875,11 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
     try {
       // Build messages for API (role/content only)
       const sharedContext = await getSharedLogContext();
-      const systemWithContext = SYSTEM_PROMPT + sharedContext;
+      const userContext = `\n\nIMPORTANT: You are currently speaking with ${currentUser}. Always remember this and never ask who you are speaking to.`;
+      const systemWithContext = SYSTEM_PROMPT + userContext + sharedContext;
 
-      const apiMessages = history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
+      const recentHistory = history.slice(-30);
+      const apiMessages = recentHistory.map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
