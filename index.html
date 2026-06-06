@@ -705,26 +705,26 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
   }
 
   // ── STORAGE HELPERS ──
-  async function loadStorageMessages(key) {
+  function loadStorageMessages(key) {
     try {
-      const result = await window.storage.get(key, true);
-      return result ? JSON.parse(result.value) : [];
+      const val = localStorage.getItem('violet_' + key);
+      return val ? JSON.parse(val) : [];
     } catch(e) { return []; }
   }
 
-  async function saveStorageMessages(key, messages) {
+  function saveStorageMessages(key, messages) {
     try {
-      await window.storage.set(key, JSON.stringify(messages), true);
+      localStorage.setItem('violet_' + key, JSON.stringify(messages));
     } catch(e) {}
   }
 
   // ── LOAD MESSAGES INTO UI ──
-  async function loadMessages(panel) {
+  function loadMessages(panel) {
     const storageKey = panel === 'mine'
       ? STORAGE_KEYS[currentUser]
       : STORAGE_KEYS[currentUser === 'Bimb-A' ? 'Bimb-S' : 'Bimb-A'];
 
-    const msgs = await loadStorageMessages(storageKey);
+    const msgs = loadStorageMessages(storageKey);
     const container = document.getElementById('messages-' + panel);
     container.innerHTML = '';
 
@@ -748,8 +748,8 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
     container.scrollTop = container.scrollHeight;
   }
 
-  async function loadMemoryLog() {
-    const log = await loadStorageMessages(STORAGE_KEYS.memory);
+  function loadMemoryLog() {
+    const log = loadStorageMessages(STORAGE_KEYS.memory);
     const container = document.getElementById('messages-memory');
     container.innerHTML = '';
 
@@ -827,8 +827,8 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
   }
 
   // ── BUILD SHARED LOG CONTEXT ──
-  async function getSharedLogContext() {
-    const log = await loadStorageMessages(STORAGE_KEYS.memory);
+  function getSharedLogContext() {
+    const log = loadStorageMessages(STORAGE_KEYS.memory);
     if (log.length === 0) return '';
     const recent = log.slice(-15);
     return '\n\n---\nSHARED TRAINING LOG (recent updates from both owners):\n' +
@@ -837,7 +837,7 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
   }
 
   // ── EXTRACT SUMMARY FOR LOG ──
-  async function extractSummary(userMsg, agentReply) {
+  function extractSummary(userMsg, agentReply) {
     const keywords = ['tether', 'walk', 'treat', 'bark', 'react', 'bed', 'touch', 'depart', 'lick mat', 'freework', 'cue', 'guest', 'mailman', 'medication', 'anxious', 'calm', 'progress', 'tried', 'did', 'practiced', 'worked on', 'went well', 'struggled'];
     const isTrainingUpdate = keywords.some(k => userMsg.toLowerCase().includes(k));
     if (!isTrainingUpdate) return null;
@@ -861,7 +861,7 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
 
     // Load existing messages for this user
     const storageKey = STORAGE_KEYS[currentUser];
-    const history = await loadStorageMessages(storageKey);
+    const history = loadStorageMessages(storageKey);
 
     // Render user message
     const container = document.getElementById('messages-mine');
@@ -874,7 +874,7 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
 
     try {
       // Build messages for API (role/content only)
-      const sharedContext = await getSharedLogContext();
+      const sharedContext = getSharedLogContext();
       const userContext = `\n\nIMPORTANT: You are currently speaking with ${currentUser}. Always remember this and never ask who you are speaking to.`;
       const systemWithContext = SYSTEM_PROMPT + userContext + sharedContext;
 
@@ -908,18 +908,18 @@ You will also receive a SHARED TRAINING LOG at the start of each conversation sh
         renderMessage(container, 'agent', reply);
 
         // Save to storage
-        await saveStorageMessages(storageKey, history);
+        saveStorageMessages(storageKey, history);
 
         // Maybe add to shared log
-        const summary = await extractSummary(text, reply);
+        const summary = extractSummary(text, reply);
         if (summary) {
-          const log = await loadStorageMessages(STORAGE_KEYS.memory);
+          const log = loadStorageMessages(STORAGE_KEYS.memory);
           log.push({
             user: currentUser,
             time: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
             summary
           });
-          await saveStorageMessages(STORAGE_KEYS.memory, log);
+          saveStorageMessages(STORAGE_KEYS.memory, log);
         }
       }
     } catch (err) {
